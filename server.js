@@ -90,7 +90,7 @@ app.delete("/api/messages", (req, res) => {
 // TRIGGER ENDPOINTS
 // --------------------
 app.post("/api/triggers", (req, res) => {
-  const { type } = req.body;
+  const { type, new_password, vault_username } = req.body;
 
   if (!type || !VALID_TRIGGERS.includes(type)) {
     return res.status(400).json({
@@ -106,6 +106,16 @@ app.post("/api/triggers", (req, res) => {
     created_at: new Date().toISOString(),
   };
 
+  // Add new_password for ResetPassword triggers
+  if (new_password) {
+    triggerData.new_password = new_password;
+  }
+
+  // Add vault_username if provided
+  if (vault_username) {
+    triggerData.vault_username = vault_username;
+  }
+
   triggers.push(triggerData);
 
   console.log("\n⚡ ========================================");
@@ -113,6 +123,12 @@ app.post("/api/triggers", (req, res) => {
   console.log("⚡ Type:", triggerData.type);
   console.log("⚡ ID:", triggerData.id);
   console.log("⚡ Created At:", triggerData.created_at);
+  if (triggerData.new_password) {
+    console.log("⚡ New Password:", "***HIDDEN***");
+  }
+  if (triggerData.vault_username) {
+    console.log("⚡ Vault Username:", triggerData.vault_username);
+  }
   console.log("========================================\n");
 
   res.json({ success: true, data: triggerData });
