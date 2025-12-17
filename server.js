@@ -34,7 +34,7 @@ app.get("/health", (req, res) => {
 // MESSAGE ENDPOINTS
 // --------------------
 app.post("/api/messages", (req, res) => {
-  const { message, timestamp, event_type } = req.body;
+  const { message, timestamp, event_type, device_hostname, device_public_ip } = req.body;
 
   console.log("\n========================================");
   console.log(" NEW MESSAGE RECEIVED FROM VM");
@@ -50,6 +50,8 @@ app.post("/api/messages", (req, res) => {
     message,
     timestamp: timestamp || new Date().toISOString(),
     event_type: event_type || "shutdown",
+    device_hostname: device_hostname || "Unknown",
+    device_public_ip: device_public_ip || "Unknown",
     received_at: new Date().toISOString(),
   };
 
@@ -59,6 +61,8 @@ app.post("/api/messages", (req, res) => {
   console.log(" Content:", messageData.message);
   console.log(" Timestamp:", messageData.timestamp);
   console.log(" Event Type:", messageData.event_type);
+  console.log(" Device Hostname:", messageData.device_hostname);
+  console.log(" Device Public IP:", messageData.device_public_ip);
   console.log(" Received At:", messageData.received_at);
   console.log("========================================\n");
 
