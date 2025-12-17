@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard - Remote Control</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(
+          135deg,
+          #1a1a2e 0%,
+          #16213e 50%,
+          #0f3460 100%
+        );
+        min-height: 100vh;
+        color: #fff;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 40px 20px;
+      }
+
+      header {
+        text-align: center;
+        margin-bottom: 40px;
+      }
+
+      h1 {
+        font-size: 2.5rem;
+        background: linear-gradient(90deg, #e94560, #ff6b9d);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 10px;
+      }
+
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 8px 20px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+      }
+
+      .status-dot {
+        width: 10px;
+        height: 10px;
+        background: #4ade80;
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 30px;
+      }
+
+      .card {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 30px;
+        transition: transform 0.3s, box-shadow 0.3s;
+      }
+
+      .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      }
+
+      .card h2 {
+        font-size: 1.3rem;
+        margin-bottom: 20px;
+        color: #e94560;
+      }
+
+      .triggers {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+      }
+
+      .trigger-btn {
+        position: relative;
+        padding: 20px;
+        border: none;
+        border-radius: 12px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        overflow: hidden;
+      }
+
+      .trigger-btn::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.2),
+          transparent
+        );
+        transition: left 0.5s;
+      }
+
+      .trigger-btn:hover::before {
+        left: 100%;
+      }
+
+      .trigger-btn:active {
+        transform: scale(0.95);
+      }
+
+      .trigger-btn.success {
+        animation: successFlash 0.5s;
+      }
+
+      @keyframes successFlash {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.6;
+        }
+      }
+
+      .btn-reset-password {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+      }
+
+      .btn-reset-system {
+        background: linear-gradient(135deg, #f093fb, #f5576c);
+        color: white;
+      }
+
+      .btn-lock {
+        background: linear-gradient(135deg, #4facfe, #00f2fe);
+        color: #1a1a2e;
+      }
+
+      .btn-remove-user {
+        background: linear-gradient(135deg, #fa709a, #fee140);
+        color: #1a1a2e;
+      }
+
+      .trigger-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .trigger-btn .icon {
+        font-size: 1.5rem;
+        display: block;
+        margin-bottom: 8px;
+      }
+
+      .messages {
+        max-height: 400px;
+        overflow-y: auto;
+      }
+
+      .message {
+        background: rgba(255, 255, 255, 0.05);
+        border-left: 3px solid #e94560;
+        padding: 15px;
+        margin-bottom: 10px;
+        border-radius: 0 8px 8px 0;
+      }
+
+      .message .content {
+        font-size: 0.95rem;
+        margin-bottom: 8px;
+      }
+
+      .message .meta {
+        font-size: 0.75rem;
+        color: rgba(255, 255, 255, 0.5);
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .pending-triggers {
+        margin-top: 20px;
+      }
+
+      .pending-trigger {
+        background: rgba(233, 69, 96, 0.2);
+        border: 1px solid #e94560;
+        padding: 12px;
+        margin-bottom: 8px;
+        border-radius: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .pending-trigger .type {
+        font-weight: 600;
+      }
+
+      .pending-trigger .time {
+        font-size: 0.8rem;
+        opacity: 0.7;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 40px;
+        opacity: 0.5;
+      }
+
+      .refresh-btn {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: #fff;
+        padding: 8px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.8rem;
+        transition: all 0.3s;
+      }
+
+      .refresh-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .header-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+      }
+
+      .toast {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        padding: 15px 25px;
+        border-radius: 10px;
+        color: white;
+        font-weight: 500;
+        transform: translateY(100px);
+        opacity: 0;
+        transition: all 0.3s;
+        z-index: 1000;
+      }
+
+      .toast.show {
+        transform: translateY(0);
+        opacity: 1;
+      }
+
+      .toast.success {
+        background: linear-gradient(135deg, #4ade80, #22c55e);
+      }
+
+      .toast.error {
+        background: linear-gradient(135deg, #f87171, #ef4444);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>🛡️ Admin Dashboard</h1>
+        <div class="status-badge">
+          <span class="status-dot"></span>
+          <span>Remote Control Active</span>
+        </div>
+      </header>
+
+      <div class="grid">
+        <!-- Trigger Controls -->
+        <div class="card">
+          <h2>⚡ Remote Triggers</h2>
+          <div class="triggers">
+            <button
+              class="trigger-btn btn-reset-password"
+              onclick="sendTrigger('ResetPassword')"
+            >
+              <span class="icon">🔑</span>
+              Reset Password
+            </button>
+            <button
+              class="trigger-btn btn-reset-system"
+              onclick="sendTrigger('ResetSystemPassword')"
+            >
+              <span class="icon">🔐</span>
+              System Password
+            </button>
+            <button
+              class="trigger-btn btn-lock"
+              onclick="sendTrigger('LockApp')"
+            >
+              <span class="icon">🔒</span>
+              Lock System
+            </button>
+            <button
+              class="trigger-btn btn-remove-user"
+              onclick="sendTrigger('RemoveUser')"
+            >
+              <span class="icon">👤</span>
+              Remove User
+            </button>
+          </div>
+
+          <div class="pending-triggers" id="pendingTriggers">
+            <h3 style="font-size: 0.9rem; margin-bottom: 10px; opacity: 0.7">
+              Pending Triggers
+            </h3>
+            <div id="pendingList"></div>
+          </div>
+        </div>
+
+        <!-- Messages Log -->
+        <div class="card">
+          <div class="header-actions">
+            <h2>📨 Messages from VM</h2>
+            <button class="refresh-btn" onclick="loadMessages()">
+              ↻ Refresh
+            </button>
+          </div>
+          <div class="messages" id="messagesList"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+      const API_BASE = "";
+
+      // Send a trigger command
+      async function sendTrigger(type) {
+        const btn = event.target.closest(".trigger-btn");
+        btn.disabled = true;
+
+        try {
+          const res = await fetch(`${API_BASE}/api/triggers`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type }),
+          });
+
+          const data = await res.json();
+
+          if (data.success) {
+            showToast(`✅ ${type} trigger sent!`, "success");
+            btn.classList.add("success");
+            setTimeout(() => btn.classList.remove("success"), 500);
+            loadPendingTriggers();
+          } else {
+            showToast(`❌ Failed: ${data.error}`, "error");
+          }
+        } catch (err) {
+          showToast(`❌ Connection error`, "error");
+          console.error(err);
+        }
+
+        btn.disabled = false;
+      }
+
+      // Load messages from VM
+      async function loadMessages() {
+        try {
+          const res = await fetch(`${API_BASE}/api/messages`);
+          const data = await res.json();
+
+          const container = document.getElementById("messagesList");
+
+          if (!data.messages || data.messages.length === 0) {
+            container.innerHTML =
+              '<div class="empty-state">No messages yet</div>';
+            return;
+          }
+
+          container.innerHTML = data.messages
+            .reverse()
+            .map(
+              (msg) => `
+                        <div class="message">
+                            <div class="content">${escapeHtml(
+                              msg.message
+                            )}</div>
+                            <div class="meta">
+                                <span>${msg.event_type}</span>
+                                <span>${formatTime(msg.received_at)}</span>
+                            </div>
+                        </div>
+                    `
+            )
+            .join("");
+        } catch (err) {
+          console.error("Failed to load messages:", err);
+        }
+      }
+
+      // Load pending triggers
+      async function loadPendingTriggers() {
+        try {
+          const res = await fetch(`${API_BASE}/api/triggers`);
+          const data = await res.json();
+
+          const container = document.getElementById("pendingList");
+
+          if (!data.triggers || data.triggers.length === 0) {
+            container.innerHTML =
+              '<div class="empty-state" style="padding: 15px;">No pending triggers</div>';
+            return;
+          }
+
+          container.innerHTML = data.triggers
+            .map(
+              (t) => `
+                    <div class="pending-trigger">
+                        <span class="type">${t.type}</span>
+                        <span class="time">${formatTime(t.created_at)}</span>
+                    </div>
+                `
+            )
+            .join("");
+        } catch (err) {
+          console.error("Failed to load triggers:", err);
+        }
+      }
+
+      // Show toast notification
+      function showToast(message, type) {
+        const toast = document.getElementById("toast");
+        toast.textContent = message;
+        toast.className = `toast ${type} show`;
+
+        setTimeout(() => {
+          toast.classList.remove("show");
+        }, 3000);
+      }
+
+      // Format timestamp
+      function formatTime(isoString) {
+        const date = new Date(isoString);
+        return date.toLocaleString();
+      }
+
+      // Escape HTML to prevent XSS
+      function escapeHtml(text) {
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      // Initial load and auto-refresh
+      loadMessages();
+      loadPendingTriggers();
+
+      setInterval(loadMessages, 10000);
+      setInterval(loadPendingTriggers, 5000);
+    </script>
+  </body>
+</html>
