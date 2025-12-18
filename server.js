@@ -15,6 +15,7 @@ app.use(express.json());
 // --------------------
 let messages = [];
 let triggers = [];
+let devices = []; // NEW: Store device information
 
 const VALID_TRIGGERS = [
   "ResetPassword",
@@ -167,6 +168,94 @@ app.delete("/api/triggers/:id", (req, res) => {
 app.delete("/api/triggers", (req, res) => {
   triggers = [];
   res.json({ success: true, message: "All triggers cleared" });
+});
+
+// --------------------
+// DEVICE ENDPOINTS (NEW)
+// --------------------
+app.post("/api/devices", (req, res) => {
+  const { device_hostname, device_public_ip, accounts, active_account } = req.body;
+
+  console.log("\n========================================");
+  console.log(" DEVICE INFO RECEIVED");
+  console.log("========================================");
+  console.log(" Hostname:", device_hostname || "Unknown");
+  console.log(" Public IP:", device_public_ip || "Unknown");
+  console.log(" Accounts:", accounts ? accounts.length : 0);
+  console.log(" Active Account:", active_account ? active_account.username : "None");
+  console.log("========================================\n");
+
+  if (!device_hostname) {
+    return res.status(400).json({
+      success: false,
+      error: "device_hostname is required"
+    });
+  }
+
+  // Find or create device
+  let device = devices.find((d) => d.device_hostname === device_hostname);
+
+  if (!device) {
+    device = {
+      id: Date.now(),
+      device_hostname,
+      device_public_ip: device_public_ip || "Unknown",
+      accounts: [],
+      active_account: null,
+      first_seen: new Date().toISOString(),
+      last_seen: new Date().toISOString(),
+    };
+    devices.push(device);
+    console.log("✅ New device registered:", device_hostname);
+  } else {
+    console.log("📝 Updating existing device:", device_hostname);
+  }
+
+  // Update device info
+  device.accounts = accounts || [];
+  device.active_account = active_account || null;
+  device.device_public_ip = device_public_ip || device.device_public_ip;
+  device.last_seen = new Date().toISOString();
+
+  res.json({
+    success: true,
+    message: "Device info updated successfully",
+    device,
+  });
+});
+
+app.get("/api/devices", (req, res) => {
+  res.json({
+    success: true,
+    count: devices.length,
+    devices,
+  });
+});
+
+app.delete("/api/devices", (req, res) => {
+  devices = [];
+  res.json({ success: true, message: "All devices cleared" });
+});
+
+app.delete("/api/devices/:id", (req, res) => {
+  const deviceId = Number(req.params.id);
+  const index = devices.findIndex((d) => d.id === deviceId);
+
+  if (index === -1) {
+    return res.status(404).json({
+      success: false,
+      error: "Device not found",
+    });
+  }
+
+  const removed = devices.splice(index, 1)[0];
+  console.log("🗑️ Device removed:", removed.device_hostname);
+
+  res.json({
+    success: true,
+    message: "Device removed",
+    data: removed,
+  });
 });
 
 // --------------------
